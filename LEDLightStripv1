@@ -1,11 +1,11 @@
 #include <FastLED.h>
 #include <OneButton.h>
 
-#define NUM_LEDS 25
+#define NUM_LEDS 35
 #define DATA_PIN 9
 #define LIGHT_PIN 8
 #define BUTTON_PIN 2
-#define BRIGHTNESS 200
+#define BRIGHTNESS 255
 
 CRGB leds[NUM_LEDS];
 OneButton button(BUTTON_PIN, true);
@@ -14,7 +14,7 @@ void setup() {
   Serial.begin(9600);
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
   pinMode(BUTTON_PIN, INPUT);
-  button.attackPressStart(pressButton);
+  button.attachPressStart(pressButton);
   pinMode(LIGHT_PIN, OUTPUT);
   digitalWrite(LIGHT_PIN, LOW);
   FastLED.setBrightness(BRIGHTNESS);
@@ -38,32 +38,35 @@ void setup() {
 unsigned long previousTimeLED = millis();
 unsigned long previousTimeButton = millis();
 
-long timeIntervalLED = 50;
-long timeIntervalButton = 100;
+long timeIntervalLED = 40;
+long timeIntervalButton = 50;
 
 int positionLED = 0;
 int brightness = BRIGHTNESS;
 boolean forward = true;
-int colorNumber = -1;
+int colorNumber = 0;
 
-int previousButtonState = -1;
-int buttonState = 0;
+int previousButtonState = LOW;
+int buttonState = LOW;
 
 void loop() {
   unsigned long currentTime = millis();
   if(currentTime - previousTimeLED > timeIntervalLED) {
     previousTimeLED = currentTime;
     if (forward) {
-      int *color = getColorNumber(colorNumber);
-      leds[positionLED] = CRGB(color[0], color[1], color[2]);
+      FastLED.setBrightness(BRIGHTNESS);
+      setColor(colorNumber, positionLED);
       FastLED.show();
       positionLED++;
       if (positionLED == NUM_LEDS) {
         forward = false;
       }
     } else {
+      for (int i = 0; i < NUM_LEDS; i++) {
+        setColor(colorNumber, i);
+      }
       FastLED.setBrightness(brightness);
-      brightness = brightness - 2;
+      brightness = brightness - 4;
       FastLED.show();
       if (brightness <= 10) {
         for (int i = 0; i < NUM_LEDS; i++) {
@@ -76,38 +79,50 @@ void loop() {
       }
     }
   }
-  button.tick();
-//  buttonState = digitalRead(BUTTON_PIN);
-//  if (buttonState != previousButtonState) {
-//    Serial.println("Button press.");
-//    previousButtonState = buttonState;
-//  }
-//  if (currentTime - previousTimeButton > timeIntervalButton) {
-//    previousTimeButton = currentTime;
-//    buttonState = digitalRead(BUTTON_PIN);
-//    if (buttonState != previousButtonState) {
-//      if (buttonState == HIGH) {
-//        Serial.println("Button press");
-//        colorNumber++;
-//      }
-//    }
-//    previousButtonState = buttonState;
-//  }
+  buttonState = digitalRead(BUTTON_PIN);
+  if (currentTime - previousTimeButton > timeIntervalButton) {
+    if (buttonState == HIGH) {
+      Serial.println("HIGH");
+    } else if (buttonState == LOW) {
+      Serial.println("LOW");
+    }
+    previousTimeButton = currentTime;
+    buttonState = digitalRead(BUTTON_PIN);
+    if (previousButtonState == LOW && buttonState == HIGH) {
+        Serial.println("Button press");
+        if (colorNumber >= 9) {
+          colorNumber = 0;
+        } else {
+          colorNumber++;
+        }
+    }
+    previousButtonState = buttonState;
+  }
 }
 
-int *getColorNumber(int num) {
-  int colors[3];
-  colors[0] = 0;
-  colors[1] = 0;
-  colors[2] = 0;
-  if (num == 0) { 
-    colors[0] = 255;
+void setColor(int num, int pLED) {
+  if (num == 0) {
+    leds[pLED] = CRGB(255,0,0); // red
   } else if (num == 1) {
-    colors[1] = 255;
+    leds[pLED] = CRGB(252, 207, 3); // yellow
   } else if (num == 2) {
-    colors[2] = 255;
+    leds[pLED] = CRGB(144, 252, 3); // lime
+  } else if (num == 4) {
+    leds[pLED] = CRGB(0, 255, 0); // green 
+  } else if (num == 5) {
+    leds[pLED] = CRGB(3, 252, 215); // aqua
+  } else if (num == 6) {
+    leds[pLED] = CRGB(0, 0, 255); // blue
+  } else if (num == 7) {
+    leds[pLED] = CRGB(198, 3, 252); // violet
+  } else if (num == 8) {
+    leds[pLED] = CRGB(255, 0, 217); // pink
+  } else if (num == 9) {
+    leds[pLED] = CRGB(255, 255, 255); // white
+  } else {
+    leds[pLED] = CRGB(0, 0, 0); // black
   }
-  return colors;
+  
 }
 
 void pressButton() {
